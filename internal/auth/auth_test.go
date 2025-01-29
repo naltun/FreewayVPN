@@ -43,7 +43,7 @@ func TestCreateUser(t *testing.T) {
 		},
 	}
 
-	authManager := New([]byte("test secret"))
+	authManager := NewAuthManager([]byte("test secret"))
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -76,7 +76,7 @@ func TestCreateUser(t *testing.T) {
 }
 
 func TestTokenLifecycle(t *testing.T) {
-	authManager := New([]byte("test secret"))
+	authManager := NewAuthManager([]byte("test secret"))
 
 	// Create a test user
 	user, err := authManager.CreateUser("test@example.com", "test key")

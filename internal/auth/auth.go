@@ -114,7 +114,7 @@ func (m *Manager) CreateUser(email string, publicKey string) (*User, error) {
 }
 
 // Create a new authentication manager
-func New(secret []byte) *Manager {
+func NewAuthManager(secret []byte) *Manager {
 	return &Manager{
 		secret: secret,
 		users:  make(map[string]*User),

@@ -1,9 +1,6 @@
 # FreewayVPN
 
-FreewayVPN[0] is a VPN service that includes both a client and server.
-
-
-[0] name subject to change
+FreewayVPN is a VPN service that includes both a client and server.
 
 ## Why use a VPN
 
@@ -22,20 +19,14 @@ v0.1
 - web server with a UI (signup, etc.)
 - documentation
 
-Initial support for: Linux, macOS
-
 v0.2
-- add OpenBSD support
 - add anonymous accounts
-- (assumed) documentation improvements
-
-Added support for: OpenBSD, Windows(?)
-
-v0.3
-- Cross-compatible[0] desktop apps
-- (assumed) documentation improvements
+- Cross-compatible[0] desktop clients
 
 [0] Support for: Linux, macOS, and Windows... not expected to support BSDs
+
+v0.3
+- Android and iOS mobile clients
 
 ## License
 

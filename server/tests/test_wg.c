@@ -20,7 +20,7 @@ main()
 {
     uint16_t port;
     fw_err_t ret;
-    wg_handle_t *wg;
+    wg_handle_t wg;
 
     /* Check if we're running as root */
     if (getuid() != 0)
@@ -37,7 +37,7 @@ main()
         err(1, "failed to create WireGuard interface");
 
     /* Set WireGuard listen port to 51820 */
-    print("Setting listen port to 51820...\n");
+    printf("Setting listen port to 51820...\n");
     if ((ret = wg_set_listen_port(&wg, 51820)) != FW_OK)
         err(1, "failed to set listen port");
 

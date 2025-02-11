@@ -20,10 +20,6 @@
 
 #include "wireguard.h"
 
-/*
- * START interface management functions
- */
-
 /* Close WireGuard interface handle */
 void
 wg_close_iface(wg_handle_t *wg)
@@ -64,6 +60,23 @@ wg_destroy_iface(wg_handle_t *wg)
 	return FW_OK;
 }
 
+/* Get WireGuard interface configuration */
+fw_err_t
+wg_get_iface(wg_handle_t *wg, struct wg_interface_io *iface)
+{
+	struct wg_data_io dio;
+
+	memset(&dio, 0, sizeof(dio));
+	strlcpy(dio.wgd_name, wg->ifname, IFNAMSIZ);
+	dio.wgd_interface = iface;
+	dio.wgd_size = sizeof(*iface);
+
+	if (ioctl(wg->sock, SIOCGWG, &dio) == -1)
+		return FW_ERR;
+
+	return FW_OK;
+}
+
 /* Open WireGuard interface handle */
 fw_err_t
 wg_open_iface(wg_handle_t *wg, const char *ifname)
@@ -82,159 +95,19 @@ wg_open_iface(wg_handle_t *wg, const char *ifname)
 	return FW_OK;
 }
 
-/*
- * END interface management functions
- */
-
-/*
- * START interface configuration functions
- */
-
-/* Set WireGuard private key */
+/* Set WireGuard interface configuration */
 fw_err_t
-wg_set_privkey(wg_handle_t *wg, const uint8_t key[MAX_KEY_LEN])
+wg_set_iface(wg_handle_t *wg, struct wg_interface_io *iface)
 {
-	struct wg_key_io kio;
+	struct wg_data_io dio;
 
-	memset(&kio, 0, sizeof(kio));
-	strlcpy(kio.wki_name, wg->ifname, IFNAMSIZ);
-	memcpy(kio.wki_key, key, WG_KEY_LEN);
+	memset(&dio, 0, sizeof(dio));
+	strlcpy(dio.wgd_name, wg->ifname, IFNAMSIZ);
+	dio.wgd_interface = iface;
+	dio.wgd_size = sizeof(*iface);
 
-	if (ioctl(wg->sock, SIOCSWGKEY, &kio) == -1)
+	if (ioctl(wg->sock, SIOCSWG, &dio) == -1)
 		return FW_ERR;
 
 	return FW_OK;
 }
-
-/* Get WireGuard listen port */
-fw_err_t
-wg_get_listen_port(wg_handle_t *wg, uint16_t *port)
-{
-	struct wg_port_io pio;
-
-	memset(&pio, 0, sizeof(pio));
-	strlcpy(pio.wpi_name, wg->ifname, IFNAMSIZ);
-
-	if (ioctl(wg->sock, SIOCGWGPORT, &pio) == -1)
-		return FW_ERR;
-
-	*port = pio.wpi_port;
-
-	return FW_OK;
-}
-
-/* Set WireGuard listen port */
-fw_err_t
-wg_set_listen_port(wg_handle_t *wg, uint16_t port)
-{
-	struct wg_port_io pio;
-
-	memset(&pio, 0, sizeof(pio));
-	strlcpy(pio.wpi_name, wg->ifname, IFNAMSIZ);
-	pio.wpi_port = port;
-
-	if (ioctl(wg->sock, SIOCSWGPORT, &pio) == -1)
-		return FW_ERR;
-
-	return FW_OK;
-}
-
-/*
- * END interface configuration functions
- */
-
-/*
- * START peer management functions
- */
-
-/* Add WireGuard peer */
-fw_err_t
-wg_add_peer(wg_handle_t *wg, const struct wg_peer_io *peer)
-{
-	struct wg_peer_io pio;
-
-	memcpy(&pio, peer, sizeof(pio));
-	strlcpy(pio.wpi_name, wg->ifname, IFNAMSIZ);
-
-	if (ioctl(wg->sock, SIOCAWGPEER, &pio) == -1)
-		return FW_ERR;
-
-	return FW_OK;
-}
-
-/* Delete WireGuard peer */
-fw_err_t
-wg_del_peer(wg_handle_t *wg, const uint8_t pubkey[WG_KEY_LEN])
-{
-	struct wg_peer_io pio;
-
-	memset(&pio, 0, sizeof(pio));
-	strlcpy(pio.wpi_name, wg->ifname, IFNAMSIZ);
-	memcpy(pio.wpi_key, pubkey, WG_KEY_LEN);
-
-	if (ioctl(wg->sock, SIOCAWGPEER, &pio) == -1)
-		return FW_ERR;
-
-	return FW_OK;
-}
-
-/* Get WireGuard peer info */
-fw_err_t
-wg_get_peer(wg_handle_t *wg, const uint8_t pubkey[WG_KEY_LEN],
-    struct wg_peer_io *peer)
-{
-	struct wg_peer_io pio;
-
-	memset(&pio, 0, sizeof(pio));
-	strlcpy(pio.wpi_name, wg->ifname, IFNAMSIZ);
-	memcpy(pio.wpi_key, pubkey, WG_KEY_LEN);
-
-	if (ioctl(wg->sock, SIOCGWGPEER, &pio) == -1)
-		return FW_ERR;
-
-	memcpy(peer, &pio, sizeof(pio));
-
-	return FW_OK;
-}
-
-/*
- * END peer management functions
- */
-
-/*
- * START key management functions
- */
-
-/* Generate WireGuard private key */
-fw_err_t
-wg_gen_privkey(uint8_t key[WG_KEY_LEN])
-{
-	int fd;
-	ssize_t n;
-
-	/* Read from OpenBSD random(4) since we can disregard portability */
-	fd = open("/dev/random", O_RDONLY);
-	if (fd == -1)
-		return FW_ERR;
-
-	n = read(fd, key, WG_KEY_LEN);
-	close(fd);
-
-	if (n != WG_KEY_LEN)
-		return FW_ERR;
-
-	return FW_OK;
-}
-
-/* Generate WireGuard public key from private key */
-fw_err_t
-wg_gen_pubkey(const uint8_t secret[WG_KEY_LEN], uint8_t public[WG_KEY_LEN])
-{
-	/* Use curve25519 to generate a public key */
-	/* XXX: Implement curve25519 (e.g., libsodium) */
-	return FW_OK;
-}
-
-/*
- * END key management functions
- */

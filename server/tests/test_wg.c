@@ -19,12 +19,18 @@
 int
 main()
 {
-	char b64_buf[WG_KEY_B64_LEN];
-	uint8_t decoded_key[WG_KEY_LEN];
-	uint8_t pubkey[WG_KEY_LEN];
-	uint8_t privkey[WG_KEY_LEN];
-
 	struct wg_interface_io iface;
+	struct wg_peer_io peer;
+
+	uint8_t peer_privkey[WG_KEY_LEN];
+	uint8_t peer_pubkey[WG_KEY_LEN];
+
+	char b64_buf[WG_KEY_B64_LEN];
+
+	uint8_t decoded_key[WG_KEY_LEN];
+	uint8_t privkey[WG_KEY_LEN];
+	uint8_t pubkey[WG_KEY_LEN];
+
 	fw_err_t ret;
 	wg_handle_t wg;
 
@@ -96,8 +102,7 @@ main()
      */
 	printf("Test decoded key matches original...\n");
 	if (memcmp(privkey, decoded_key, WG_KEY_LEN) != 0)
-		errx(1,
-		    "key verification: decoded key doesn't match original\n");
+		errx(1, "key verification: decoded key doesn't match original");
 
     /*
      * TEST
@@ -106,6 +111,46 @@ main()
 	memset(&iface, 0, sizeof(iface));
 	if ((ret = wg_get_iface(&wg, &iface)) != FW_OK)
 		errx(1, "wg_get_iface: failed to get interface configuration");
+
+    /*
+     * TEST
+     */
+	printf("Test add peer...\n");
+
+	memset(&peer, 0, sizeof(peer));
+
+    /* Generate peer keys */
+	if ((ret = wg_gen_keypair(peer_privkey, peer_pubkey)) != FW_OK)
+		errx(1, "wg_gen_keypair: failed to generate peer keypair");
+
+    /* Configure peer */
+	memcpy(peer.p_public, peer_pubkey, WG_KEY_LEN);
+	peer.p_flags = WG_PEER_HAS_PUBLIC;
+	if ((ret = wg_add_peer(&wg, &peer)) != FW_OK)
+		errx(1, "wg_add_peer: failed to add peer");
+
+    /*
+     * TEST
+     */
+	printf("Test get peer...\n");
+	memset(&peer, 0, sizeof(peer));
+    /* Get peer */
+	if ((ret = wg_get_peer(&wg, peer_pubkey, &peer)) != FW_OK)
+		errx(1, "wg_get_peer: failed to get peer");
+
+    /*
+     * TEST
+     */
+	printf("Test verify peer public key...\n");
+	if (memcmp(peer.p_public, peer_pubkey, WG_KEY_LEN) != 0)
+		errx(1, "peer verification: peer public key does not match");
+
+    /*
+     * TEST
+     */
+	printf("Test delete peer...\n");
+	if ((ret = wg_delete_peer(&wg, peer_pubkey)) != FW_OK)
+		errx(1, "wg_delete_peer: failed to delete peer");
 
     /*
      * TEST -- destroy interface before closing it to prevent EEXIST error
@@ -119,6 +164,8 @@ main()
      */
 	printf("Test close wg0 interface...\n");
 	wg_close_iface(&wg);
+	if (wg.sock != -1)
+		errx(1, "wg_close_iface: failed to close interface");
 
 	printf("\nTests completed successfully!\n");
 

@@ -16,6 +16,9 @@
 /* Base64-encoded WireGuard key length (with nullbyte) */
 #define WG_KEY_B64_LEN 45
 
+/* Maximum allowed peers */
+#define WG_PEERS_MAX 1024
+
 /* FreewayVPN error codes */
 typedef enum {
 	FW_OK  = 0,
@@ -44,6 +47,12 @@ fw_err_t wg_set_iface(wg_handle_t *, struct wg_interface_io *);
 fw_err_t wg_gen_keypair(uint8_t [WG_KEY_LEN], uint8_t [WG_KEY_LEN]);
 fw_err_t wg_get_pubkey(wg_handle_t *, uint8_t [WG_KEY_LEN]);
 fw_err_t wg_set_privkey(wg_handle_t *, const uint8_t [WG_KEY_LEN]);
+
+/* Peer management */
+fw_err_t wg_add_peer(wg_handle_t *, struct wg_peer_io *);
+fw_err_t wg_delete_peer(wg_handle_t *, const uint8_t [WG_KEY_LEN]);
+fw_err_t wg_get_peer(wg_handle_t *, const uint8_t [WG_KEY_LEN],
+    struct wg_peer_io *);
 
 /* Helpers */
 fw_err_t wg_key_to_b64(char *, size_t, uint8_t [WG_KEY_LEN]);

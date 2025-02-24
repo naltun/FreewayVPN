@@ -218,9 +218,9 @@ err:
 	return FW_ERR;
 }
 
-/* Dlete peer from interface */
+/* Remove peer from interface */
 fw_err_t
-wg_delete_peer(wg_handle_t *wg, const uint8_t pubkey[WG_KEY_LEN])
+wg_remove_peer(wg_handle_t *wg, const uint8_t pubkey[WG_KEY_LEN])
 {
 	struct wg_data_io dio;
 	struct wg_interface_io *iface;

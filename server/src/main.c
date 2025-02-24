@@ -11,10 +11,10 @@
 
 #include "fwvpnd.h"
 
-/* Global server context */
-static fw_ctx_t ctx;
+/* Global fwvpnd (daemon) context */
+static fw_ctx_t g_fw_ctx;
 /* Default configuration */
-static fw_cfg_t cfg = {
+static fw_cfg_t g_fw_cfg = {
 	.db_path     = "/var/fwvpn/db/vpn.db",
 	.listen_addr = "127.0.0.1",
 	.listen_port = 8080,
@@ -53,7 +53,7 @@ main(int argc, char *argv[])
 		err(1, "pledge");
 
 	/* Initialize server */
-	if (fw_init(&cfg) != FW_OK)
+	if (fw_init(&g_fw_cfg) != FW_OK)
 		err(1, "fw_init: failed to initialize server");
 
 	/* Start server */

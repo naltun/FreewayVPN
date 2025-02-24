@@ -2,9 +2,9 @@
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
- *
- *
- * test_wg.c - Simple test program to validate WireGuard API
+ */
+/*
+ * test_server.c - Simple test program to validate fwvpnd
  */
 
 #include <err.h>
@@ -14,6 +14,7 @@
 #include <unistd.h>
 
 #include "base64.h"
+#include "fwvpnd.h"
 #include "wireguard.h"
 
 int
@@ -37,6 +38,11 @@ main()
     /* Check if we're running as root */
 	if (getuid() != 0)
 		errx(1, "must run as root");
+
+    /*
+     * START wg(4) tests
+     */
+	printf("Starting wg(4) tests...\n");
 
     /*
      * TEST
@@ -148,9 +154,9 @@ main()
     /*
      * TEST
      */
-	printf("Test delete peer...\n");
-	if ((ret = wg_delete_peer(&wg, peer_pubkey)) != FW_OK)
-		errx(1, "wg_delete_peer: failed to delete peer");
+	printf("Test remove peer...\n");
+	if ((ret = wg_remove_peer(&wg, peer_pubkey)) != FW_OK)
+		errx(1, "wg_remove_peer: failed to remove peer");
 
     /*
      * TEST -- destroy interface before closing it to prevent EEXIST error
@@ -167,7 +173,64 @@ main()
 	if (wg.sock != -1)
 		errx(1, "wg_close_iface: failed to close interface");
 
-	printf("\nTests completed successfully!\n");
+    /*
+     * END wg(4) API tests
+     */
+
+    /*
+     * START fwvpnd API tests
+     */
+	printf("\nStarting fwvpnd tests...\n");
+
+    /*
+     * TEST
+     */
+	printf("Test init fwpnvd with NULL configuration...\n");
+	if ((ret = fw_init(NULL)) != FW_ERR)
+		errx(1, "fw_init: fwvpnd initialized with NULL config");
+
+    /*
+     * TEST
+     */
+	printf("Test init fwvpnd with valid configuration...\n");
+	fw_cfg_t cfg = {
+		.db_path     = ":memory:",
+		.listen_port = 51820,
+		.wg_iface    = "wg0",
+	};
+	if ((ret = fw_init(&cfg)) != FW_OK)
+		errx(1, "fw_init: failed to initialize with valid config");
+
+    /*
+     * TEST
+     */
+	printf("Test start fwvpnd...\n");
+	if ((ret = fw_start()) != FW_OK)
+		errx(1, "fw_start: failed to start fwvpnd");
+
+    /*
+     * TEST
+     */
+	printf("Test double start fwvpnd...\n");
+	if ((ret = fw_start()) != FW_OK)
+		errx(1, "fw_start: second start should return OK");
+
+    /*
+     * Clean up test environment
+     */
+	printf("\nCleaning up test environment...\n");
+	if (wg_open_iface(&wg, "wg0") == FW_OK) {
+		if ((ret = wg_destroy_iface(&wg)) != FW_OK)
+			errx(1,
+			    "wg_destroy_iface: failed to destroy interface");
+		wg_close_iface(&wg);
+	}
+
+    /*
+     * END fwvpnd API tests
+     */
+
+	printf("Tests completed successfully!\n");
 
 	return 0;
 }
